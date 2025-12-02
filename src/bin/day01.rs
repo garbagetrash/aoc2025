@@ -54,11 +54,13 @@ fn part2(sequence: &[i64]) -> i64 {
 fn main() {
     // Examples
     let sequence = parse("inputs/day01a.txt");
+    println!("Examples:");
     println!("Part 1: {}", part1(&sequence));
     println!("Part 2: {}", part2(&sequence));
 
     // Real input
     let sequence = parse("inputs/day01.txt");
+    println!("Challenges:");
     println!("Part 1: {}", part1(&sequence));
     println!("Part 2: {}", part2(&sequence));
 }
