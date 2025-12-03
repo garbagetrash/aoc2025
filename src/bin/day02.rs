@@ -4,11 +4,8 @@ fn parse(filename: &str) -> Vec<Vec<usize>> {
     let mut file = std::fs::File::open(filename).expect("failed to open file");
     let mut s = String::new();
     file.read_to_string(&mut s).expect("failed to read file to string");
-    println!("s: {}", s);
-    s.split(',').map(|range| {
-        println!("range: {}", range);
+    s.trim().split(',').map(|range| {
         range.split('-').map(|n| {
-            println!("n: {}", n);
             n.parse::<usize>().expect("failed to parse usize")
         }).collect()
     }).collect()
