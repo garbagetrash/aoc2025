@@ -61,6 +61,44 @@ fn check_valid(_id: usize, length: usize) -> bool {
     valid
 }
 
+// parallel counters. if they can generate a number in range, then invalid
+fn generator(length: usize, nrepeat: usize, range: [usize; 2]) -> Vec<usize> {
+    let k = 10_usize.pow(length as u32);
+    let mut generator = 1;
+    for _ in 1..nrepeat {
+        generator *= k;
+        generator += 1;
+    }
+
+    let mut output = vec![];
+    let mut i = range[0];
+    while i <= range[1] {
+        if i % generator == 0 {
+            output.push(i);
+            i += generator;
+        } else {
+            i = (i / generator + 1) * generator;
+        }
+    }
+    output
+}
+
+fn part2a(id_ranges: &[[usize; 2]]) -> usize {
+    let mut invalids: HashSet<usize> = HashSet::new();
+    for range in id_ranges {
+        let end = range[1];
+        let n_end_digits = end.ilog10() as usize + 1;
+        let maxlength = n_end_digits / 2 + 1;
+        for length in 1..maxlength {
+            let nrepeat = n_end_digits / length;
+            let new_invalids = generator(length, nrepeat, *range);
+            let new_invalids: HashSet<usize> = new_invalids.into_iter().collect();
+            invalids = invalids.union(&new_invalids).copied().collect::<HashSet<usize>>();
+        }
+    }
+    invalids.into_iter().sum::<usize>()
+}
+
 fn part2(id_ranges: &[[usize; 2]]) -> usize {
     let mut invalids = HashSet::new();
     for range in id_ranges {
@@ -82,11 +120,11 @@ fn part2(id_ranges: &[[usize; 2]]) -> usize {
                 let right = i % k;
                 if right < left {
                     //println!("right < left ||| i: {}, right: {}, left: {}, length: {}, k: {}, kk: {}", i, right, left, length, k, kk);
-                    i = (i / k) * k + left - 1;
+                    i = (i / k) * k + left;
                 } else if right > left {
                     //println!("right > left ||| i: {}, right: {}, left: {}, length: {}, k: {}, kk: {}", i, right, left, length, k, kk);
                     i += k;
-                    i = (i / k) * k - 1;
+                    i = (i / k) * k + left;
                     //i = (i / k) * k;
                 } else {
                     // left == right => might be invalid
@@ -96,8 +134,8 @@ fn part2(id_ranges: &[[usize; 2]]) -> usize {
                     } else {
                         //println!("valid  : {}", i);
                     }
+                    i += 1;
                 }
-                i += 1;
             }
         }
     }
@@ -116,7 +154,7 @@ fn main() {
 
     let id_ranges = parse("inputs/day02.txt");
     let answer1 = part1(&id_ranges);
-    let answer2 = part2(&id_ranges);
+    let answer2 = part2a(&id_ranges);
     println!("Challenges:");
     println!("Part 1: {}", answer1);
     println!("Part 2: {}", answer2);
