@@ -64,6 +64,7 @@ fn check_valid(_id: usize, length: usize) -> bool {
 fn part2(id_ranges: &[[usize; 2]]) -> usize {
     let mut invalids = HashSet::new();
     for range in id_ranges {
+        //println!("Interval: {}-{}", range[0], range[1]);
         let end = range[1];
         let n_end_digits = end.ilog10() as usize + 1;
         let maxlength = n_end_digits / 2 + 1;
@@ -84,12 +85,16 @@ fn part2(id_ranges: &[[usize; 2]]) -> usize {
                     i = (i / k) * k + left - 1;
                 } else if right > left {
                     //println!("right > left ||| i: {}, right: {}, left: {}, length: {}, k: {}, kk: {}", i, right, left, length, k, kk);
-                    //i += kk - 1;
+                    i += k;
+                    i = (i / k) * k - 1;
                     //i = (i / k) * k;
                 } else {
                     // left == right => might be invalid
                     if !check_valid(i, length) {
+                        //println!("invalid: {}", i);
                         invalids.insert(i);
+                    } else {
+                        //println!("valid  : {}", i);
                     }
                 }
                 i += 1;
