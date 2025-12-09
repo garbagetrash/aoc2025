@@ -1,8 +1,8 @@
 use std::io::Read;
 
-type input = (Vec<(usize, usize)>, Vec<usize>);
+type Input = (Vec<(usize, usize)>, Vec<usize>);
 
-fn parse(filename: &str) -> input {
+fn parse(filename: &str) -> Input {
     let mut file = std::fs::File::open(filename).expect("failed to open file");
     let mut s = String::new();
     file.read_to_string(&mut s).expect("failed to read file to string");
@@ -27,7 +27,7 @@ fn parse(filename: &str) -> input {
     (fresh_ranges, available)
 }
 
-fn part1(tup: &input) -> usize {
+fn part1(tup: &Input) -> usize {
     let (fresh_ranges, available) = tup;
     let mut cntr = 0;
     // Just be naive for now
@@ -44,7 +44,7 @@ fn part1(tup: &input) -> usize {
 
 use aoc2025::{Range, union};
 
-fn part2(tup: &input) -> usize {
+fn part2(tup: &Input) -> usize {
     let (fresh_ranges, _available) = tup;
     let fresh_ranges: Vec<_> = fresh_ranges.into_iter().map(|fr| Range::new(fr.0, fr.1)).collect();
     let theunion = union(&fresh_ranges);

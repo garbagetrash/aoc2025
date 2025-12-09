@@ -42,7 +42,7 @@ pub fn union(ranges: &[Range]) -> Vec<Range> {
         let mut new = *r;
         let mut remove = vec![];
         for (i, o) in output.iter().enumerate() {
-            if let Some(intersect) = new.intersect(*o) {
+            if new.intersect(*o).is_some() {
                 new = new.union(*o)[0];
                 remove.push(i);
             }
