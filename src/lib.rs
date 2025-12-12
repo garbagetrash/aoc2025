@@ -1,4 +1,4 @@
-use std::cmp::{min, max};
+use std::cmp::{max, min};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Range {
@@ -8,7 +8,10 @@ pub struct Range {
 
 impl Range {
     pub fn new(start: usize, end: usize) -> Self {
-        Self { start: min(start, end), end: max(start, end) }
+        Self {
+            start: min(start, end),
+            end: max(start, end),
+        }
     }
 
     pub fn intersect(&self, other: Range) -> Option<Range> {
@@ -17,7 +20,10 @@ impl Range {
         } else if other.start > self.end {
             None
         } else {
-            Some(Range::new(max(self.start, other.start), min(self.end, other.end)))
+            Some(Range::new(
+                max(self.start, other.start),
+                min(self.end, other.end),
+            ))
         }
     }
 
@@ -27,7 +33,10 @@ impl Range {
         } else if other.start > self.end {
             vec![*self, other]
         } else {
-            vec![Range::new(min(self.start, other.start), max(self.end, other.end))]
+            vec![Range::new(
+                min(self.start, other.start),
+                max(self.end, other.end),
+            )]
         }
     }
 

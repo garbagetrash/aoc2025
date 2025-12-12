@@ -1,18 +1,20 @@
+use std::cmp::{max, min};
 use std::io::Read;
-use std::cmp::{min, max};
-
 
 fn parse(filename: &str) -> Vec<i64> {
     let mut file = std::fs::File::open(filename).expect("failed to open file");
     let mut s = String::new();
-    file.read_to_string(&mut s).expect("failed to read to string");
-    s.lines().map(|line| {
-        let mut out = line[1..].parse::<i64>().expect("failed to parse i64");
-        if line.chars().next().unwrap() == 'L' {
-            out *= -1;
-        }
-        out
-    }).collect()
+    file.read_to_string(&mut s)
+        .expect("failed to read to string");
+    s.lines()
+        .map(|line| {
+            let mut out = line[1..].parse::<i64>().expect("failed to parse i64");
+            if line.chars().next().unwrap() == 'L' {
+                out *= -1;
+            }
+            out
+        })
+        .collect()
 }
 
 fn spin(_start: i64, new: i64) -> i64 {

@@ -1,6 +1,5 @@
 use std::io::Read;
 
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Ops {
     Add,
@@ -10,7 +9,8 @@ enum Ops {
 fn parse(filename: &str) -> Vec<(Ops, Vec<i64>)> {
     let mut file = std::fs::File::open(filename).expect("failed to open file");
     let mut s = String::new();
-    file.read_to_string(&mut s).expect("failed to read file to string");
+    file.read_to_string(&mut s)
+        .expect("failed to read file to string");
     let mut tmp = vec![];
     for line in s.trim().lines() {
         tmp.push(line.split_whitespace().collect::<Vec<_>>());
@@ -21,15 +21,20 @@ fn parse(filename: &str) -> Vec<(Ops, Vec<i64>)> {
     for (i, t) in tmp.iter().enumerate() {
         if i == tmp.len() - 1 {
             // Handle operators
-            ops = t.into_iter().map(|&o| {
-                match o {
+            ops = t
+                .into_iter()
+                .map(|&o| match o {
                     "+" => Ops::Add,
                     "*" => Ops::Mul,
                     _ => panic!("invalid op"),
-                }
-            }).collect();
+                })
+                .collect();
         } else {
-            nums.push(t.into_iter().map(|n| n.parse::<i64>().unwrap()).collect::<Vec<_>>());
+            nums.push(
+                t.into_iter()
+                    .map(|n| n.parse::<i64>().unwrap())
+                    .collect::<Vec<_>>(),
+            );
         }
     }
 
@@ -60,7 +65,8 @@ fn part1(rows: &[(Ops, Vec<i64>)]) -> i64 {
 fn parse2(filename: &str) -> Vec<(Ops, Vec<i64>)> {
     let mut file = std::fs::File::open(filename).expect("failed to open file");
     let mut s = String::new();
-    file.read_to_string(&mut s).expect("failed to read file to string");
+    file.read_to_string(&mut s)
+        .expect("failed to read file to string");
 
     let tmp: Vec<Vec<char>> = s.lines().map(|line| line.chars().collect()).collect();
 

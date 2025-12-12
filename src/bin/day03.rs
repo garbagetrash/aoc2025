@@ -3,10 +3,16 @@ use std::io::Read;
 fn parse(filename: &str) -> Vec<Vec<u64>> {
     let mut file = std::fs::File::open(filename).expect("failed to open file");
     let mut s = String::new();
-    file.read_to_string(&mut s).expect("failed to read file to string");
-    s.trim().lines().map(|line| {
-        line.chars().map(|c| c.to_digit(10).expect("failed to parse u64") as u64).collect()
-    }).collect()
+    file.read_to_string(&mut s)
+        .expect("failed to read file to string");
+    s.trim()
+        .lines()
+        .map(|line| {
+            line.chars()
+                .map(|c| c.to_digit(10).expect("failed to parse u64") as u64)
+                .collect()
+        })
+        .collect()
 }
 
 fn part1(rows: &[Vec<u64>]) -> u64 {
@@ -15,7 +21,7 @@ fn part1(rows: &[Vec<u64>]) -> u64 {
         // Find first digit
         let mut max_digit = row[0];
         let mut max_idx = 0;
-        for (i, n) in row[..row.len()-1].iter().enumerate() {
+        for (i, n) in row[..row.len() - 1].iter().enumerate() {
             if *n > max_digit {
                 max_digit = *n;
                 max_idx = i;
@@ -40,13 +46,13 @@ fn part1(rows: &[Vec<u64>]) -> u64 {
 fn first_max_digit(digits: &[u64], depth: usize) -> (u64, &[u64]) {
     let mut max_digit = digits[0];
     let mut max_idx = 0;
-    for (i, n) in digits[..digits.len()-(depth-1)].iter().enumerate() {
+    for (i, n) in digits[..digits.len() - (depth - 1)].iter().enumerate() {
         if *n > max_digit {
             max_digit = *n;
             max_idx = i;
         }
     }
-    (max_digit, &digits[max_idx+1..])
+    (max_digit, &digits[max_idx + 1..])
 }
 
 fn part2(rows: &[Vec<u64>]) -> u64 {
@@ -64,7 +70,7 @@ fn part2(rows: &[Vec<u64>]) -> u64 {
         // Joltage
         let mut joltage = 0;
         for i in 0..12 {
-            joltage += 10_u64.pow(11-i as u32) * digits[i];
+            joltage += 10_u64.pow(11 - i as u32) * digits[i];
         }
         output += joltage;
     }
