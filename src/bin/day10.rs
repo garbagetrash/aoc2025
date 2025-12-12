@@ -306,18 +306,34 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
     println!();
 
     // At this point we have an LP solution, but is it integer?
+    let mut non_integer = false;
+    let mut first_non_integer_column = None;
+    let mut non_integer_solution = None;
     for c in pivot_columns {
         let c = c - 1; // We do this because the simplification removes the first column.
         let r = (1..nrows).position(|x| m[x][c] != 0).unwrap() + 1;
         //println!("c: {}, r: {}", c, r);
         if m[r][ncols-1] % m[r][c] != 0 {
-            // TODO: Problem: We have a non-integer variable in our LP solution.
+            // Problem: We have a non-integer variable in our LP solution.
             let solution = m[r][ncols-1] as f64 /  m[r][c] as f64;
             println!("Found non-integer solution {}", solution);
+            non_integer = true;
+            first_non_integer_column = Some(c);
+            non_integer_solution = Some(solution);
         }
     }
 
-    // TODO: We're hitting this assert, why? We implemented _linear_ programming.
+    // TODO: Start the branch and prune proceedure...
+    if non_integer {
+        // Pick a non-integer variable solution xi = k, constrain it in 2 new optimization problems
+        // as: xi <= floor(k), and the other with xi >= ceiling(k).
+        // Now solve these, see if integer, recurse, keep best integer solution, and once we've
+        // exhausted all created solutions choose the best integer solution so far. This should be
+        // our optimium.
+        let xi = non_integer_solution.unwrap();
+    }
+
+    // Verify we have an _integer_ number of button presses...
     assert_eq!(m[0][ncols-1]%m[0][0], 0);
 
     // Read off row 2, far right as # steps
