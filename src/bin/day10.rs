@@ -107,7 +107,10 @@ fn print_matrix(m: &[Vec<i64>]) {
     }
 }
 
-fn pivot(m: &mut [Vec<i64>]) {
+// TODO: When pivoting, we sometime reuse a given row which reintroduces the first pivot element
+//       from that row back into the objective function. This seems bad? But what else would we do
+//       given # buttons ie columns > # counter ie rows?
+fn pivot(m: &mut [Vec<i64>]) -> Vec<usize> {
     let nrows = m.len();
     let endlen = nrows - 2;
     let ncols = m[0].len();
@@ -117,6 +120,7 @@ fn pivot(m: &mut [Vec<i64>]) {
     print_matrix(&m);
     println!();
 
+    let mut pivot_columns = vec![];
     let mut cntr = 0;
     loop {
         // Scan columns, then rows looking for a positive element
@@ -187,6 +191,7 @@ fn pivot(m: &mut [Vec<i64>]) {
         print_matrix(&m);
         println!();
 
+        pivot_columns.push(col);
         cntr += 1;
 
         // When artificial variables are 0'd we're done
@@ -194,6 +199,8 @@ fn pivot(m: &mut [Vec<i64>]) {
             break;
         }
     }
+    pivot_columns.sort();
+    pivot_columns
 }
 
 // Linear programming. Simplex method.
@@ -243,7 +250,7 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
     println!();
 
     // Run pivoting algorithm until artificial objective is 0'd out
-    pivot(&mut m);
+    let pivot_columns = pivot(&mut m);
     print_matrix(&m);
     println!();
 
@@ -259,10 +266,6 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
     }
     let nrows = m.len();
     let ncols = m[0].len();
-
-    println!("Simplified");
-    print_matrix(&m);
-    println!();
 
     // This isn't guaranteed optimal yet, no?
     for c in 1..ncols-1 {
@@ -298,7 +301,23 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
         }
     }
 
-    // TODO: We're hitting this assert, why?
+    println!("Simplified");
+    print_matrix(&m);
+    println!();
+
+    // At this point we have an LP solution, but is it integer?
+    for c in pivot_columns {
+        let c = c - 1; // We do this because the simplification removes the first column.
+        let r = (1..nrows).position(|x| m[x][c] != 0).unwrap() + 1;
+        //println!("c: {}, r: {}", c, r);
+        if m[r][ncols-1] % m[r][c] != 0 {
+            // TODO: Problem: We have a non-integer variable in our LP solution.
+            let solution = m[r][ncols-1] as f64 /  m[r][c] as f64;
+            println!("Found non-integer solution {}", solution);
+        }
+    }
+
+    // TODO: We're hitting this assert, why? We implemented _linear_ programming.
     assert_eq!(m[0][ncols-1]%m[0][0], 0);
 
     // Read off row 2, far right as # steps
@@ -308,7 +327,8 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
 // 21422 is too low
 fn part2(machines: &[Input]) -> usize {
     let mut output = 0;
-    for m in machines {
+    for (i, m) in machines.iter().enumerate() {
+        println!("Problem {}/{}", i+1, machines.len());
         println!("{:?}", m);
 
         let pathlength = simplex(&m.3, &m.2);
