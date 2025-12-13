@@ -2,16 +2,22 @@ use std::collections::HashSet;
 use std::io::Read;
 use std::time::Instant;
 
-
 fn parse(filename: &str) -> Vec<[usize; 2]> {
     let mut file = std::fs::File::open(filename).expect("failed to open file");
     let mut s = String::new();
-    file.read_to_string(&mut s).expect("failed to read file to string");
-    s.trim().split(',').map(|range| {
-        range.split('-').map(|n| {
-            n.parse::<usize>().expect("failed to parse usize")
-        }).collect::<Vec<usize>>().try_into().unwrap()
-    }).collect()
+    file.read_to_string(&mut s)
+        .expect("failed to read file to string");
+    s.trim()
+        .split(',')
+        .map(|range| {
+            range
+                .split('-')
+                .map(|n| n.parse::<usize>().expect("failed to parse usize"))
+                .collect::<Vec<usize>>()
+                .try_into()
+                .unwrap()
+        })
+        .collect()
 }
 
 fn part1(id_ranges: &[[usize; 2]]) -> usize {
@@ -23,7 +29,7 @@ fn part1(id_ranges: &[[usize; 2]]) -> usize {
             let ndigits = i.ilog10() as usize + 1;
             if ndigits % 2 == 0 {
                 // Even number of digits
-                let n2 = ndigits/2;
+                let n2 = ndigits / 2;
                 let k = 10_usize.pow(n2 as u32);
                 let left = i / k;
                 let right = i % k;
@@ -53,9 +59,9 @@ fn check_valid(_id: usize, length: usize) -> bool {
     let pattern = &id[..length];
     let mut valid = false;
     for idx in 1..nrepeats {
-        if pattern != &id[length*idx..length*(idx+1)] {
+        if pattern != &id[length * idx..length * (idx + 1)] {
             valid = true;
-            break
+            break;
         }
     }
     valid
@@ -93,7 +99,10 @@ fn part2a(id_ranges: &[[usize; 2]]) -> usize {
             let nrepeat = n_end_digits / length;
             let new_invalids = generator(length, nrepeat, *range);
             let new_invalids: HashSet<usize> = new_invalids.into_iter().collect();
-            invalids = invalids.union(&new_invalids).copied().collect::<HashSet<usize>>();
+            invalids = invalids
+                .union(&new_invalids)
+                .copied()
+                .collect::<HashSet<usize>>();
         }
     }
     invalids.into_iter().sum::<usize>()

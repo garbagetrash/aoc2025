@@ -7,53 +7,65 @@ type Input = (usize, u64, Vec<u64>, Vec<u64>);
 fn parse(filename: &str) -> Vec<Input> {
     let mut file = std::fs::File::open(filename).expect("failed to open file");
     let mut s = String::new();
-    file.read_to_string(&mut s).expect("failed to read file to string");
+    file.read_to_string(&mut s)
+        .expect("failed to read file to string");
 
-    s.trim().lines().map(|line| {
-        // First part indicator lights in [...]
-        let lights: String = line.split('[').skip(1).take(1).collect();
-        let lights = lights.split(']').next().unwrap();
-        let nlights = lights.len();
-        let mut lightint = 0_u64;
-        for (i, c) in lights.chars().enumerate() {
-            match c {
-                '#' => lightint ^= 1_u64 << i,
-                _ => (),
-            };
-        }
-
-        // Then parse wiring button schematics in (...)
-        let schematic: String = line.split(']').skip(1).collect();
-        let schematic = schematic.split('{').next().unwrap().trim();
-        let mut buttons = vec![];
-        let siter = schematic.split(&['(', ')', ' ']);
-        for tmp in siter {
-            if tmp.len() > 0 {
-                let mut buttonint = 0_u64;
-                for i in tmp.split(',') {
-                    buttonint ^= 1_u64 << i.parse::<u64>().unwrap();
-                }
-                buttons.push(buttonint);
+    s.trim()
+        .lines()
+        .map(|line| {
+            // First part indicator lights in [...]
+            let lights: String = line.split('[').skip(1).take(1).collect();
+            let lights = lights.split(']').next().unwrap();
+            let nlights = lights.len();
+            let mut lightint = 0_u64;
+            for (i, c) in lights.chars().enumerate() {
+                match c {
+                    '#' => lightint ^= 1_u64 << i,
+                    _ => (),
+                };
             }
-        }
 
-        // Finally parse joltage requirements in {...}
-        let joltage: String = line.split('{').skip(1).collect();
-        let joltage = joltage.split('}').next().unwrap().trim();
-        let joltages: Vec<u64> = joltage.split(',').map(|j| j.parse::<u64>().unwrap()).collect();
+            // Then parse wiring button schematics in (...)
+            let schematic: String = line.split(']').skip(1).collect();
+            let schematic = schematic.split('{').next().unwrap().trim();
+            let mut buttons = vec![];
+            let siter = schematic.split(&['(', ')', ' ']);
+            for tmp in siter {
+                if tmp.len() > 0 {
+                    let mut buttonint = 0_u64;
+                    for i in tmp.split(',') {
+                        buttonint ^= 1_u64 << i.parse::<u64>().unwrap();
+                    }
+                    buttons.push(buttonint);
+                }
+            }
 
-        (nlights, lightint, buttons, joltages)
-    }).collect::<Vec<_>>()
+            // Finally parse joltage requirements in {...}
+            let joltage: String = line.split('{').skip(1).collect();
+            let joltage = joltage.split('}').next().unwrap().trim();
+            let joltages: Vec<u64> = joltage
+                .split(',')
+                .map(|j| j.parse::<u64>().unwrap())
+                .collect();
+
+            (nlights, lightint, buttons, joltages)
+        })
+        .collect::<Vec<_>>()
 }
 
 fn build_state_transition_table(state_length: usize, buttons: &[u64]) -> Vec<Vec<u64>> {
     let n = 2_usize.pow(state_length as u32);
-    (0..n).map(|i| {
-        buttons.iter().map(|b| {
-            // What happens when we're in state i and press button b?
-            i as u64 ^ b
-        }).collect()
-    }).collect()
+    (0..n)
+        .map(|i| {
+            buttons
+                .iter()
+                .map(|b| {
+                    // What happens when we're in state i and press button b?
+                    i as u64 ^ b
+                })
+                .collect()
+        })
+        .collect()
 }
 
 // Do BFS on state graph. Each state is a node in a graph, we have the transition matrix which
@@ -125,8 +137,8 @@ fn pivot(m: &mut [Vec<i64>]) -> Vec<usize> {
     loop {
         // Scan columns, then rows looking for a positive element
         let mut col = 2;
-        for c in 2..2+num_buttons {
-        //for c in 2..ncols-1 {
+        for c in 2..2 + num_buttons {
+            //for c in 2..ncols-1 {
             if m[0][c] > 0 {
                 col = c;
                 break;
@@ -140,9 +152,9 @@ fn pivot(m: &mut [Vec<i64>]) -> Vec<usize> {
         let mut min = f64::MAX;
         let mut minidx = 0;
         for i in 0..endlen {
-            let pivot_element = m[2+i][col];
+            let pivot_element = m[2 + i][col];
             if pivot_element > 0 {
-                let bterm = m[2+i][ncols-1] as f64 / pivot_element as f64;
+                let bterm = m[2 + i][ncols - 1] as f64 / pivot_element as f64;
                 if bterm < min {
                     min = bterm;
                     minidx = i;
@@ -159,15 +171,15 @@ fn pivot(m: &mut [Vec<i64>]) -> Vec<usize> {
             if i != minidx + 2 {
                 let mut a = m[i][col];
                 let mut multiplier = true;
-                if a % m[2+minidx][col] == 0 {
-                    a /= m[2+minidx][col];
+                if a % m[2 + minidx][col] == 0 {
+                    a /= m[2 + minidx][col];
                     multiplier = false;
                 }
                 for j in 0..ncols {
                     if multiplier {
-                        m[i][j] *= m[2+minidx][col];
+                        m[i][j] *= m[2 + minidx][col];
                     }
-                    m[i][j] -= a * m[2+minidx][j];
+                    m[i][j] -= a * m[2 + minidx][j];
                 }
             }
         }
@@ -195,7 +207,7 @@ fn pivot(m: &mut [Vec<i64>]) -> Vec<usize> {
         cntr += 1;
 
         // When artificial variables are 0'd we're done
-        if m[0][ncols-1] == 0 || cntr > num_buttons {
+        if m[0][ncols - 1] == 0 || cntr > num_buttons {
             break;
         }
     }
@@ -221,18 +233,18 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
     // Now fill out the buttons as columns starting row 3, col 3
     for j in 0..buttons.len() {
         for i in 0..end.len() {
-            m[2+i][2+j] = ((buttons[j] >> i) & 1) as i64;
+            m[2 + i][2 + j] = ((buttons[j] >> i) & 1) as i64;
         }
     }
 
     // Identity to the right of the buttons
     for i in 0..end.len() {
-        m[2+i][2+buttons.len()+i] = 1;
+        m[2 + i][2 + buttons.len() + i] = 1;
     }
 
     // End state desired last column on the right
     for i in 0..end.len() {
-        m[2+i][2+buttons.len()+end.len()] = end[i] as i64;
+        m[2 + i][2 + buttons.len() + end.len()] = end[i] as i64;
     }
 
     print_matrix(&m);
@@ -241,7 +253,7 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
     // Add button rows to artificial objective, row 1
     for i in 0..end.len() {
         for j in 0..ncols {
-            m[0][j] += m[2+i][j];
+            m[0][j] += m[2 + i][j];
         }
     }
 
@@ -258,7 +270,7 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
     m.remove(0);
     for _ in 0..end.len() {
         for row in 0..m.len() {
-            m[row].remove(2+buttons.len());
+            m[row].remove(2 + buttons.len());
         }
     }
     for row in 0..m.len() {
@@ -268,7 +280,7 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
     let ncols = m[0].len();
 
     // This isn't guaranteed optimal yet, no?
-    for c in 1..ncols-1 {
+    for c in 1..ncols - 1 {
         if m[0][c] > 0 {
             // solve this column?
             // Given the column, choose the best row that minimizes b term
@@ -277,7 +289,7 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
             for i in 1..nrows {
                 let pivot_element = m[i][c];
                 if pivot_element > 0 {
-                    let bterm = m[i][ncols-1] as f64 / pivot_element as f64;
+                    let bterm = m[i][ncols - 1] as f64 / pivot_element as f64;
                     if bterm < min {
                         min = bterm;
                         minidx = i;
@@ -313,9 +325,9 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
         let c = c - 1; // We do this because the simplification removes the first column.
         let r = (1..nrows).position(|x| m[x][c] != 0).unwrap() + 1;
         //println!("c: {}, r: {}", c, r);
-        if m[r][ncols-1] % m[r][c] != 0 {
+        if m[r][ncols - 1] % m[r][c] != 0 {
             // Problem: We have a non-integer variable in our LP solution.
-            let solution = m[r][ncols-1] as f64 /  m[r][c] as f64;
+            let solution = m[r][ncols - 1] as f64 / m[r][c] as f64;
             println!("Found non-integer solution {}", solution);
             non_integer = true;
             first_non_integer_column = Some(c);
@@ -334,17 +346,17 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
     }
 
     // Verify we have an _integer_ number of button presses...
-    assert_eq!(m[0][ncols-1]%m[0][0], 0);
+    assert_eq!(m[0][ncols - 1] % m[0][0], 0);
 
     // Read off row 2, far right as # steps
-    m[0][ncols-1] / m[0][0]
+    m[0][ncols - 1] / m[0][0]
 }
 
 // 21422 is too low
 fn part2(machines: &[Input]) -> usize {
     let mut output = 0;
     for (i, m) in machines.iter().enumerate() {
-        println!("Problem {}/{}", i+1, machines.len());
+        println!("Problem {}/{}", i + 1, machines.len());
         println!("{:?}", m);
 
         let pathlength = simplex(&m.3, &m.2);

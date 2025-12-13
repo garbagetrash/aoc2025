@@ -7,13 +7,17 @@ type Input = HashMap<String, Vec<String>>;
 fn parse(filename: &str) -> Input {
     let mut file = std::fs::File::open(filename).expect("failed to open file");
     let mut s = String::new();
-    file.read_to_string(&mut s).expect("failed to read file to string");
+    file.read_to_string(&mut s)
+        .expect("failed to read file to string");
 
     let mut output: Input = HashMap::new();
     for line in s.trim().lines() {
         let mut liter = line.split(&[':', ' ']).map(|t| t.trim());
         let name = liter.next().unwrap();
-        let outputs: Vec<String> = liter.map(|r| r.to_string()).filter(|s| s.len() > 0).collect();
+        let outputs: Vec<String> = liter
+            .map(|r| r.to_string())
+            .filter(|s| s.len() > 0)
+            .collect();
         output.insert(name.to_string(), vec![]);
         for o in &outputs {
             if let Some(v) = output.get_mut(name) {
@@ -67,7 +71,10 @@ fn count_ways_to_nodes(start: &str, connections: &Input) -> HashMap<String, usiz
                 }
                 if all_deps {
                     // Solve node
-                    let value = upstream.iter().map(|n| ways_to_node.get(n).unwrap()).sum::<usize>();
+                    let value = upstream
+                        .iter()
+                        .map(|n| ways_to_node.get(n).unwrap())
+                        .sum::<usize>();
                     ways_to_node.insert(node.to_string(), value);
                     to_remove.push(node.to_string());
                 }

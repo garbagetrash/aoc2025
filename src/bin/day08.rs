@@ -1,16 +1,28 @@
 use std::io::Read;
 
-
 fn parse(filename: &str) -> Vec<[i64; 3]> {
     let mut file = std::fs::File::open(filename).expect("failed to open file");
     let mut s = String::new();
-    file.read_to_string(&mut s).expect("failed to read file to string");
+    file.read_to_string(&mut s)
+        .expect("failed to read file to string");
 
-    s.trim().lines().map(|line| line.split(',').map(|s| s.parse::<i64>().unwrap()).collect::<Vec<i64>>().try_into().unwrap()).collect()
+    s.trim()
+        .lines()
+        .map(|line| {
+            line.split(',')
+                .map(|s| s.parse::<i64>().unwrap())
+                .collect::<Vec<i64>>()
+                .try_into()
+                .unwrap()
+        })
+        .collect()
 }
 
 fn euclid_dist_squared(p1: [i64; 3], p2: [i64; 3]) -> i64 {
-    p1.iter().zip(p2.iter()).map(|(t1, t2)| (t1 - t2).pow(2)).sum()
+    p1.iter()
+        .zip(p2.iter())
+        .map(|(t1, t2)| (t1 - t2).pow(2))
+        .sum()
 }
 
 fn connect_circuits(i1: usize, i2: usize, circuits: &mut Vec<Vec<usize>>) {
@@ -68,7 +80,12 @@ fn part1(tup: &[[i64; 3]], n_connections: usize) -> usize {
 
     // Sort circuits by size
     circuits.sort_by(|a, b| a.len().cmp(&b.len()));
-    circuits.into_iter().rev().take(3).map(|c| c.len()).product()
+    circuits
+        .into_iter()
+        .rev()
+        .take(3)
+        .map(|c| c.len())
+        .product()
 }
 
 fn part2(tup: &[[i64; 3]]) -> i64 {

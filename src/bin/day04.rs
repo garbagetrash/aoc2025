@@ -3,16 +3,12 @@ use std::io::Read;
 fn parse(filename: &str) -> Vec<Vec<u8>> {
     let mut file = std::fs::File::open(filename).expect("failed to open file");
     let mut s = String::new();
-    file.read_to_string(&mut s).expect("failed to read file to string");
-    s.trim().lines().map(|line| {
-        line.chars().map(|c| {
-            if c == '.' {
-                0
-            } else {
-                1
-            }
-        }).collect()
-    }).collect()
+    file.read_to_string(&mut s)
+        .expect("failed to read file to string");
+    s.trim()
+        .lines()
+        .map(|line| line.chars().map(|c| if c == '.' { 0 } else { 1 }).collect())
+        .collect()
 }
 
 fn get_neighbors(pos: (i32, i32), map: &[Vec<u8>]) -> Vec<(usize, usize)> {
@@ -94,8 +90,13 @@ fn part2(_rows: &[Vec<u8>]) -> u64 {
             }
         }
 
-        if remove_map.iter().map(|r| r.iter().sum::<u32>()).sum::<u32>() == 0 {
-            break
+        if remove_map
+            .iter()
+            .map(|r| r.iter().sum::<u32>())
+            .sum::<u32>()
+            == 0
+        {
+            break;
         }
 
         // Remove

@@ -1,15 +1,24 @@
-use std::cmp::{min, max};
+use std::cmp::{max, min};
 use std::collections::HashSet;
 use std::io::Read;
 use std::time::Instant;
 
-
 fn parse(filename: &str) -> Vec<[i64; 2]> {
     let mut file = std::fs::File::open(filename).expect("failed to open file");
     let mut s = String::new();
-    file.read_to_string(&mut s).expect("failed to read file to string");
+    file.read_to_string(&mut s)
+        .expect("failed to read file to string");
 
-    s.trim().lines().map(|line| line.split(',').map(|s| s.parse::<i64>().unwrap()).collect::<Vec<i64>>().try_into().unwrap()).collect()
+    s.trim()
+        .lines()
+        .map(|line| {
+            line.split(',')
+                .map(|s| s.parse::<i64>().unwrap())
+                .collect::<Vec<i64>>()
+                .try_into()
+                .unwrap()
+        })
+        .collect()
 }
 
 fn part1(tup: &[[i64; 2]]) -> i64 {
@@ -41,18 +50,6 @@ impl Line {
     fn is_horizontal(&self) -> bool {
         self.p1[1] == self.p2[1]
     }
-    fn is_vertical(&self) -> bool {
-        self.p1[0] == self.p2[0]
-    }
-    fn contains_line(&self, other: Line) -> bool {
-        if self.is_horizontal() && other.is_horizontal() {
-            self.p1[0] <= other.p1[0] && self.p2[0] >= other.p2[0]
-        } else if self.is_vertical() && other.is_vertical() {
-            self.p1[1] <= other.p1[1] && self.p2[1] >= other.p2[1]
-        } else {
-            false
-        }
-    }
     fn contains_point(&self, point: [i64; 2]) -> bool {
         if self.is_horizontal() {
             point[1] == self.p1[1] && self.p1[0] <= point[0] && self.p2[0] >= point[0]
@@ -73,26 +70,16 @@ impl Rectangle {
         let upper_left = [min(p1[0], p2[0]), min(p1[1], p2[1])];
         let lower_right = [max(p1[0], p2[0]), max(p1[1], p2[1])];
 
-        Self { p1: upper_left, p2: lower_right }
+        Self {
+            p1: upper_left,
+            p2: lower_right,
+        }
     }
     fn size(&self) -> i64 {
         (self.p2[0] - self.p1[0] + 1) * (self.p2[1] - self.p1[1] + 1)
     }
     fn contains_point(&self, p: [i64; 2]) -> bool {
         self.p1[0] <= p[0] && p[0] <= self.p2[0] && self.p1[1] <= p[1] && p[1] <= self.p2[1]
-    }
-    fn intersect_line(&self, line: Line) -> bool {
-        if line.is_horizontal() {
-            line.p1[1] >= self.p1[1] && line.p1[1] <= self.p2[1] && line.p1[0] <= self.p2[0] && line.p2[0] >= self.p1[0]
-        } else {
-            line.p1[0] >= self.p1[0] && line.p1[0] <= self.p2[0] && line.p1[1] <= self.p2[1] && line.p2[1] >= self.p1[1]
-        }
-    }
-    fn grow_right(&self) -> Rectangle {
-        Rectangle::new(self.p1, [self.p2[0] + 1, self.p2[1]])
-    }
-    fn grow_down(&self) -> Rectangle {
-        Rectangle::new(self.p1, [self.p2[0], self.p2[1] + 1])
     }
 }
 
@@ -182,10 +169,9 @@ fn walk_perimeter(start: [i64; 2], lines: &[Line]) -> HashSet<[i64; 2]> {
 // 4.) Take maximum sized grown rectangle. Done.
 
 fn part2(tup: &[[i64; 2]]) -> i64 {
-
     // Create lines
     let mut lines = vec![];
-    for i in 0.. tup.len() - 1 {
+    for i in 0..tup.len() - 1 {
         lines.push(Line::new(tup[i], tup[i + 1]));
     }
     lines.push(Line::new(tup[0], tup[tup.len() - 1]));
