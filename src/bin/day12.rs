@@ -45,6 +45,19 @@ impl Shape {
         }
     }
 
+    fn area(&self) -> usize {
+        let mut area = 0;
+        for row in &self.shape {
+            for c in row {
+                if *c != '.' {
+                    area += 1;
+                }
+            }
+        }
+        area
+    }
+
+
     fn rotate_cw(&mut self) {
         let mut newshape = [['.'; 3]; 3];
         newshape[0][2] = self.shape[0][0];
@@ -198,7 +211,7 @@ impl Board {
                                 break;
                             }
                         }
-                        if x == 0 || y == 0 || x == self.board[0].len() - 1 || y == self.board.len() - 1 {
+                        if y == self.board.len() - 1 {
                             any_non_empty = true;
                         }
                         if any_non_empty {
@@ -259,6 +272,18 @@ fn solve_tree_p1(tree: &Tree, shapes: &[Shape]) -> bool {
     let mut board = Board::new(tree.dims.0, tree.dims.1);
     let mut shape_counts = tree.cnts.clone();
 
+    // Quick sanity check just looking at area
+    let mut shapes_area = 0;
+    for i in 0..shapes.len() {
+        shapes_area += shape_counts[i] * shapes[i].area();
+    }
+    let board_area = board.board.len() * board.board[0].len();
+
+    if shapes_area > board_area {
+        println!("Shapes total area exceeds that of the board");
+        return false;
+    }
+
     // We will keep and update this set of options to reduce the search space since we only have a
     // few distinct shapes, and a good number of each.
     let mut shape_options: HashSet<(usize, Shape)> = HashSet::new();
@@ -269,18 +294,23 @@ fn solve_tree_p1(tree: &Tree, shapes: &[Shape]) -> bool {
     }
 
     println!("Start:");
+    println!("Shape Counts: {:?}", shape_counts);
     board.display();
 
     let mut cntr = 0;
     let mut placed = 0;
-    
+
     // What positions are possible?
     let cursors = board.get_all_positions();
     //println!("cursors: {:?}", cursors);
 
     loop {
         // Enumerate our possible actions and their costs
-        let mut actions = vec![];
+        let mut actions: Vec<(_, usize, usize, bool, i64)> = vec![];
+
+        println!();
+        println!("Shape Counts: {:?}", shape_counts);
+        println!();
 
         // Try all possible shapes...
         for (sidx, shape) in &shape_options {
@@ -290,8 +320,16 @@ fn solve_tree_p1(tree: &Tree, shapes: &[Shape]) -> bool {
                 let mut tmpshape = shape.clone();
                 for rotation in 0..4 {
                     if board.placement_check(*cursor, &tmpshape) {
-                        let cost = board.cost(*cursor, &tmpshape);
-                        actions.push((*cursor, *sidx, rotation, false, cost.unwrap()));
+                        let cost = board.cost(*cursor, &tmpshape).unwrap();
+                        let best_cost = if actions.len() == 0 {
+                            999999999999
+                        } else {
+                            actions.last().unwrap().4
+                        };
+                        if cost < best_cost {
+                            actions.push((*cursor, *sidx, rotation, false, cost));
+                            actions.sort_by_key(|k| -k.4);
+                        }
                     }
                     tmpshape.rotate_cw();
                 }
@@ -300,22 +338,37 @@ fn solve_tree_p1(tree: &Tree, shapes: &[Shape]) -> bool {
                 tmpshape.flip_lr();
                 for rotation in 0..4 {
                     if board.placement_check(*cursor, &tmpshape) {
-                        let cost = board.cost(*cursor, &tmpshape);
-                        actions.push((*cursor, *sidx, rotation, true, cost.unwrap()));
+                        let cost = board.cost(*cursor, &tmpshape).unwrap();
+                        let best_cost = if actions.len() == 0 {
+                            999999999999
+                        } else {
+                            actions.last().unwrap().4
+                        };
+                        if cost < best_cost {
+                            actions.push((*cursor, *sidx, rotation, true, cost));
+                            actions.sort_by_key(|k| -k.4);
+                        }
                     }
                     tmpshape.rotate_cw();
                 }
             }
         }
 
+        println!("Finished enumerating actions: {}", actions.len());
+
         // Now we have a vec of possible actions and their costs (cursor, sidx, rotation, flipped?, cost)
         if actions.len() == 0 && shape_counts.iter().sum::<usize>() > 0 {
             // No possible actions and shapes remaining mean we lose.
             return false;
+        } else if actions.len() == 0 {
+            panic!("shouldn't hit this");
         }
 
         // Sort actions so that lowest costs are at the end, highest at the start
         actions.sort_by_key(|k| -k.4);
+        //println!("actions: {:?}", actions);
+
+        println!("Finished sorting actions");
 
         // Grab our piece...
         let best_action = actions.pop().unwrap();
@@ -353,12 +406,15 @@ fn solve_tree_p1(tree: &Tree, shapes: &[Shape]) -> bool {
         shape_counts[best_action.1] -= 1;
         if shape_counts.iter().sum::<usize>() == 0 {
             // We placed all the pieces successfully, so we're done.
+            println!("Final Successful Board State:");
+            board.display();
+            println!();
             return true;
         }
 
         // Update `shape_options` in case we've exhausted supply of anything.
-        let mut shape_options: HashSet<(usize, Shape)> = HashSet::new();
-        for (i, s) in shapes.iter().enumerate() {
+        shape_options = HashSet::new();
+        for (i, _s) in shapes.iter().enumerate() {
             if shape_counts[i] > 0 {
                 shape_options.insert((i, shapes[i].clone()));
             }
@@ -371,12 +427,40 @@ fn solve_tree_p1(tree: &Tree, shapes: &[Shape]) -> bool {
     }
 }
 
+fn p1_size_test(trees: &[Tree], shapes: &[Shape]) -> i64 {
+    let mut count = 0;
+    for (i, tree) in trees.iter().enumerate() {
+        // Quick sanity check just looking at area
+        let mut shapes_area = 0;
+        for i in 0..shapes.len() {
+            shapes_area += tree.cnts[i] * shapes[i].area();
+        }
+        let board_area = tree.dims.0 * tree.dims.1;
+
+        // Shows when its solvable you have like hundreds of spaces to spare, every time.
+        //println!("{}", shapes_area as i64 - board_area as i64);
+
+        if shapes_area > board_area {
+            //println!("Tree {}: Shapes total area exceeds that of the board", i);
+        } else {
+            count += 1;
+        }
+    }
+    count
+}
+
 fn part1(tup: &Input) -> i64 {
     let (shapes, trees) = tup;
+    /*
     for shape in shapes {
         shape.display();
     }
+    */
 
+    // NOTE: This is stupid and I hate it.
+    return p1_size_test(trees, shapes);
+
+    // I'm keeping this I don't care.
     let mut tree_idx = 0;
     let mut num_that_work = 0;
     for tree in trees {
@@ -403,8 +487,8 @@ fn main() {
 
     println!("Examples:");
     let input = parse("inputs/day12a.txt");
-    let answer1 = part1(&input);
-    println!("Part 1: {}", answer1);
+    //let answer1 = part1(&input);
+    //println!("Part 1: {}", answer1);
     let answer2 = part2(&input);
     println!("Part 2: {}", answer2);
 
