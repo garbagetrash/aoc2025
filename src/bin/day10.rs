@@ -113,7 +113,7 @@ fn part1(machines: &[Input]) -> usize {
     output
 }
 
-fn print_matrix(m: &[Vec<i64>]) {
+fn print_matrix<T: std::fmt::Debug>(m: &[Vec<T>]) {
     for row in 0..m.len() {
         println!("{:?}", m[row]);
     }
@@ -128,9 +128,9 @@ fn pivot(m: &mut [Vec<i64>]) -> Vec<usize> {
     let ncols = m[0].len();
     let num_buttons = ncols - 3 - endlen;
 
-    println!("pivot start");
-    print_matrix(&m);
-    println!();
+    //println!("pivot start");
+    //print_matrix(&m);
+    //println!();
 
     let mut pivot_columns = vec![];
     let mut cntr = 0;
@@ -200,8 +200,8 @@ fn pivot(m: &mut [Vec<i64>]) -> Vec<usize> {
             }
         }
 
-        print_matrix(&m);
-        println!();
+        //print_matrix(&m);
+        //println!();
 
         pivot_columns.push(col);
         cntr += 1;
@@ -247,8 +247,8 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
         m[2 + i][2 + buttons.len() + end.len()] = end[i] as i64;
     }
 
-    print_matrix(&m);
-    println!();
+    //print_matrix(&m);
+    //println!();
 
     // Add button rows to artificial objective, row 1
     for i in 0..end.len() {
@@ -257,9 +257,9 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
         }
     }
 
-    println!("Pre-pivot");
-    print_matrix(&m);
-    println!();
+    //println!("Pre-pivot");
+    //print_matrix(&m);
+    //println!();
 
     // Run pivoting algorithm until artificial objective is 0'd out
     let pivot_columns = pivot(&mut m);
@@ -352,6 +352,203 @@ fn simplex(end: &[u64], buttons: &[u64]) -> i64 {
     m[0][ncols - 1] / m[0][0]
 }
 
+fn ge_pivot(r: usize, c: usize, next_row_to: usize, m: &mut [Vec<f64>]) {
+    let nrows = m.len();
+    let ncols = m[0].len();
+
+    // We like our pivot elements to be 1.0
+    if m[r][c] != 1.0 {
+        let a = m[r][c];
+        for cc in 0..ncols {
+            m[r][cc] *= 1.0 / a;
+        }
+    }
+
+    // This zeros out column c in m
+    for rr in 0..nrows {
+        if rr != r {
+            let a = m[rr][c];
+            for cc in 0..ncols {
+                m[rr][cc] -= a * m[r][cc];
+            }
+        }
+    }
+
+    // Now lets do a row swap (row r and row c) to get I on left
+    if r != next_row_to {
+        let tmp = m[r].clone();
+        for cc in 0..ncols {
+            m[r][cc] = m[next_row_to][cc];
+        }
+        for cc in 0..ncols {
+            m[next_row_to][cc] = tmp[cc];
+        }
+    }
+}
+
+fn gaussian_elimination(mut m: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    let nrows = m.len();
+    let ncols = m[0].len();
+
+    let mut start_row = 0;
+    for c in 0..ncols {
+        let mut pivot_row = None;
+        for r in start_row..nrows {
+            if m[r][c] != 0.0 {
+                // Clean mod, pivot on this element
+                pivot_row = Some(r);
+                start_row += 1;
+                break;
+            }
+        }
+        if let Some(prow) = pivot_row {
+            //println!("Pivot column: {}", c);
+            //println!("Pivot row   : {}", prow);
+            ge_pivot(prow, c, start_row - 1, &mut m);
+            //print_matrix(&m);
+            //println!();
+        } else {
+            // Have to nudge over another column and try again.
+        }
+
+        if start_row == nrows {
+            // Solved pivots equal to matrix rank, now we're done
+            break;
+        }
+    }
+
+    // Clean up numerical nonsense a bit
+    for r in 0..nrows {
+        for c in 0..ncols {
+            if (m[r][c] - m[r][c].round()).abs() < 1e-9 {
+                m[r][c] = m[r][c].round();
+            }
+        }
+    }
+
+    /*
+    // Remove all 0's rows
+    let mut remove_rows = vec![];
+    for r in 0..nrows {
+        let mut all_zeros = true;
+        for c in 0..ncols {
+            if m[r][c] != 0.0 {
+                all_zeros = false;
+                break;
+            }
+        }
+        if all_zeros {
+            remove_rows.push(r);
+        }
+    }
+
+    while let Some(r) = remove_rows.pop() {
+        m.remove(r);
+    }
+    */
+
+    //println!("Final State after Gaussian Elimination");
+    //print_matrix(&m);
+    //println!();
+
+    m
+}
+
+fn create_ax_b(n: i64, buttons: &[u64], end: &[u64]) -> Vec<Vec<f64>> {
+    // Set up the constraints, [ A | b ]
+    let nrows = end.len() + 1;
+    let ncols = buttons.len() + 1;
+    let mut m = vec![vec![0_f64; ncols]; nrows];
+
+    // Fill out the buttons (A) as columns from the left
+    for j in 0..buttons.len() {
+        for i in 0..end.len() {
+            m[i][j] = ((buttons[j] >> i) & 1) as f64;
+        }
+    }
+
+    // End state desired last column on the right
+    for i in 0..end.len() {
+        m[i][buttons.len()] = end[i] as f64;
+    }
+
+    // Add one final constraint to sum number of presses = n
+    for i in 0..ncols-1 {
+        m[nrows-1][i] = 1.0;
+    }
+
+    m[nrows-1][ncols-1] = n as f64;
+
+    println!("buttons.len(): {}", buttons.len());
+    println!("end.len()    : {}", end.len());
+    println!("Ax = b:");
+    print_matrix(&m);
+    println!();
+
+    m
+}
+
+fn solution_valid(x: &[f64]) -> bool {
+    for xx in x {
+        if *xx < 0.0 || (xx - xx.round()).abs() > 1e-4 {
+            return false;
+        }
+    }
+    true
+}
+
+fn solution_positive(x: &[f64]) -> bool {
+    for xx in x {
+        if *xx < 0.0 {
+            return false;
+        }
+    }
+    true
+}
+
+fn setup_least_squares(axb: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    // A is m x n
+    // x is n x 1
+    // b is m x 1
+
+    // Calculate nxn matrix A'A
+    let n = axb[0].len() - 1;
+    let m = axb.len();
+    let mut ata_atb = vec![vec![0.0; n+1]; n];
+    for r in 0..n {
+        for c in 0..n {
+            for i in 0..m {
+                ata_atb[r][c] += axb[i][r] * axb[i][c];
+            }
+        }
+    }
+
+    // Calculate nx1 vector A'b
+    for r in 0..n {
+        for i in 0..m {
+            ata_atb[r][n] += axb[i][r] * axb[i][n];
+        }
+    }
+
+    //println!("Augmented Form of A'Ax = A'b");
+    //print_matrix(&ata_atb);
+    //println!();
+
+    // They were stored in augmented form in the first place
+    ata_atb
+}
+
+fn solve(axb: Vec<Vec<f64>>) -> Vec<f64> {
+    let mut x = vec![];
+    let axb = gaussian_elimination(axb);
+    let nrows = axb.len();
+    let ncols = axb[0].len();
+    for r in 0..nrows {
+        x.push(axb[r][ncols-1]);
+    }
+    x
+}
+
 // 21422 is too low
 fn part2(machines: &[Input]) -> usize {
     let mut output = 0;
@@ -359,11 +556,27 @@ fn part2(machines: &[Input]) -> usize {
         println!("Problem {}/{}", i + 1, machines.len());
         println!("{:?}", m);
 
-        let pathlength = simplex(&m.3, &m.2);
+        let min_presses = *m.3.iter().max().unwrap() as i64;
 
-        println!("pathlength: {}", pathlength);
-        println!();
-        output += pathlength;
+        let mut n = min_presses;
+        loop {
+            print!("n: {}\r", n);
+            let axb = create_ax_b(n, &m.2, &m.3);
+            let axb = setup_least_squares(axb);
+            let x = solve(axb);
+            if solution_positive(&x) {
+                println!("n: {}, x: {:?}", n, x);
+            }
+            if solution_valid(&x) {
+                println!("# Presses: {}", n);
+                output += n;
+                break;
+            }
+            n += 1;
+            if n > 200 {
+                panic!("asdf");
+            }
+        }
     }
     output as usize
 }
